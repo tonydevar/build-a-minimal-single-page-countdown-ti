@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countdown Timer</title>
+  <style>
+    /* §1  Custom properties */
+    :root {
+      --accent:   #7c3aed;
+      --accent-dim: rgba(124, 58, 237, 0.2);
+      --bg:       #0f0f1a;
+      --surface:  rgba(255, 255, 255, 0.05);
+      --border:   rgba(255, 255, 255, 0.10);
+      --text:     #ffffff;
+      --text-dim: rgba(255, 255, 255, 0.50);
+      --danger:   #ef4444;
+      --ring-track: rgba(255, 255, 255, 0.08);
+      --transition: 0.2s ease;
+    }
+
+    /* §2  Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* §3  App shell + layout */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                   Helvetica, Arial, sans-serif;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      padding: 40px 24px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* §4  SVG ring */
+    .ring {
+      width: 260px;
+      height: 260px;
+      overflow: visible;
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: var(--ring-track);
+      stroke-width: 10;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 502.655;
+      stroke-dashoffset: 0;
+      transform: rotate(-90deg);
+      transform-origin: 100px 100px;
+      transition: stroke 0.4s ease;
+    }
+
+    .ring--done .ring-progress {
+      animation: pulse-ring 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .ring-time {
+      font-family: 'Courier New', Courier, 'Lucida Console', monospace;
+      font-size: 42px;
+      font-weight: 700;
+      fill: var(--text);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .ring-label {
+      font-size: 11px;
+      font-weight: 600;
+      fill: var(--text-dim);
+      text-anchor: middle;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* §5  Input row */
+    .inputs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .input-group input[type="number"] {
+      width: 80px;
+      padding: 12px 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'Courier New', Courier, 'Lucida Console', monospace;
+      text-align: center;
+      appearance: textfield;
+      -moz-appearance: textfield;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .input-group input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(124, 58, 237, 0.08);
+    }
+
+    .input-group input[type="number"]::-webkit-inner-spin-button,
+    .input-group input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .input-group input[type="number"]:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .colon {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-top: -18px; /* align with input number vertically */
+    }
+
+    /* §6  Error message */
+    .error {
+      font-size: 0.8rem;
+      color: var(--danger);
+      min-height: 1.2em;
+      text-align: center;
+    }
+
+    /* §7  Buttons */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: 50px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      min-height: 44px;
+      letter-spacing: 0.04em;
+      transition: background var(--transition), transform var(--transition),
+                  box-shadow var(--transition), opacity var(--transition);
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: #6d28d9;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+    }
+
+    .btn--ghost {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn--ghost:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    /* §8  Done state */
+    .done-flash {
+      animation: flash-bg 0.5s ease;
+    }
+
+    @keyframes flash-bg {
+      0%   { background: rgba(239, 68, 68, 0.15); }
+      100% { background: var(--bg); }
+    }
+
+    /* §9  Responsive */
+    @media (max-width: 480px) {
+      .app {
+        gap: 20px;
+        padding: 28px 16px;
+      }
+
+      .ring {
+        width: 220px;
+        height: 220px;
+      }
+
+      .ring-time {
+        font-size: 36px;
+      }
+
+      .input-group input[type="number"] {
+        width: 70px;
+        font-size: 1.4rem;
+        padding: 10px 6px;
+      }
+
+      .btn {
+        padding: 11px 22px;
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <h1>Countdown Timer</h1>
+
+    <!-- SVG Ring -->
+    <svg class="ring" id="ring" viewBox="0 0 200 200" aria-hidden="true">
+      <circle class="ring-track"    cx="100" cy="100" r="80"/>
+      <circle class="ring-progress" cx="100" cy="100" r="80" id="ring-progress"/>
+      <text class="ring-time"  x="100" y="96"  id="ring-time">00:10</text>
+      <text class="ring-label" x="100" y="118" id="ring-label">SET</text>
+    </svg>
+
+    <!-- Inputs -->
+    <div class="inputs" id="input-row">
+      <div class="input-group">
+        <input type="number" id="inp-min" min="0" max="99" value="0"
+               inputmode="numeric" aria-label="Minutes">
+        <label for="inp-min">MIN</label>
+      </div>
+      <span class="colon" aria-hidden="true">:</span>
+      <div class="input-group">
+        <input type="number" id="inp-sec" min="0" max="59" value="10"
+               inputmode="numeric" aria-label="Seconds">
+        <label for="inp-sec">SEC</label>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <p class="error" id="error-msg" role="alert" aria-live="polite"></p>
+
+    <!-- Controls -->
+    <div class="controls" id="controls">
+      <button class="btn btn--primary" id="btn-start"  type="button">Start</button>
+      <button class="btn btn--ghost"   id="btn-pause"  type="button" hidden>Pause</button>
+      <button class="btn btn--primary" id="btn-resume" type="button" hidden>Resume</button>
+      <button class="btn btn--ghost"   id="btn-reset"  type="button" hidden>Reset</button>
+    </div>
+  </div>
+
+  <script>
+    /* §A  Constants */
+    const RADIUS       = 80;
+    const CIRCUMFERENCE = 2 * Math.PI * RADIUS; // 502.655...
+    const TICK_MS      = 100;
+
+    /* §B  DOM refs */
+    const elApp      = document.getElementById('app');
+    const elRing     = document.getElementById('ring');
+    const elProgress = document.getElementById('ring-progress');
+    const elTime     = document.getElementById('ring-time');
+    const elLabel    = document.getElementById('ring-label');
+    const elInputRow = document.getElementById('input-row');
+    const elError    = document.getElementById('error-msg');
+    const inpMin     = document.getElementById('inp-min');
+    const inpSec     = document.getElementById('inp-sec');
+    const btnStart   = document.getElementById('btn-start');
+    const btnPause   = document.getElementById('btn-pause');
+    const btnResume  = document.getElementById('btn-resume');
+    const btnReset   = document.getElementById('btn-reset');
+
+    /* §C  State */
+    const state = {
+      phase: 'idle',      // 'idle' | 'running' | 'paused' | 'done'
+      totalSeconds: 0,
+      remainingSeconds: 0,
+      startTime: 0,
+      intervalId: null,
+    };
+
+    /* §D  render() — single source of truth */
+    function render() {
+      const { phase, totalSeconds, remainingSeconds } = state;
+      const fraction = totalSeconds > 0 ? remainingSeconds / totalSeconds : 1;
+
+      // Ring offset
+      const offset = CIRCUMFERENCE * (1 - fraction);
+      elProgress.setAttribute('stroke-dashoffset', offset);
+
+      // Readout
+      elTime.textContent = formatTime(Math.ceil(remainingSeconds));
+
+      // Accent colour urgency switch
+      const accent = (phase === 'running' || phase === 'paused') && remainingSeconds <= 10
+        ? '#ef4444'
+        : '#7c3aed';
+      document.documentElement.style.setProperty('--accent', accent);
+      // Keep stroke in sync (CSS var on SVG stroke doesn't always repaint; set directly)
+      elProgress.style.stroke = accent;
+
+      // Ring done class
+      if (phase === 'done') {
+        elRing.classList.add('ring--done');
+      } else {
+        elRing.classList.remove('ring--done');
+      }
+
+      // Label text
+      const labels = { idle: 'SET', running: 'REMAINING', paused: 'PAUSED', done: "TIME'S UP!" };
+      elLabel.textContent = labels[phase];
+
+      // Input row visibility
+      elInputRow.hidden = (phase !== 'idle');
+
+      // Button visibility
+      btnStart.hidden  = (phase !== 'idle');
+      btnPause.hidden  = (phase !== 'running');
+      btnResume.hidden = (phase !== 'paused');
+      btnReset.hidden  = (phase === 'idle');
+
+      // Disable inputs when not idle
+      inpMin.disabled = (phase !== 'idle');
+      inpSec.disabled = (phase !== 'idle');
+    }
+
+    /* §E  tick() */
+    function tick() {
+      const elapsed = (Date.now() - state.startTime) / 1000;
+      state.remainingSeconds = Math.max(0, state.totalSeconds - elapsed);
+
+      if (state.remainingSeconds <= 0) {
+        state.remainingSeconds = 0;
+        state.phase = 'done';
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        beep();
+        elApp.classList.add('done-flash');
+        setTimeout(() => elApp.classList.remove('done-flash'), 500);
+      }
+
+      render();
+    }
+
+    /* §F  startTimer() */
+    function startTimer() {
+      const mins = parseInt(inpMin.value, 10) || 0;
+      const secs = parseInt(inpSec.value,  10) || 0;
+      const total = mins * 60 + secs;
+
+      if (total <= 0) {
+        elError.textContent = 'Please enter a duration greater than 0.';
+        inpSec.focus();
+        return;
+      }
+      elError.textContent = '';
+
+      state.totalSeconds     = total;
+      state.remainingSeconds = total;
+      state.startTime        = Date.now();
+      state.phase            = 'running';
+      state.intervalId       = setInterval(tick, TICK_MS);
+      render();
+    }
+
+    /* §G  pauseTimer() */
+    function pauseTimer() {
+      if (state.phase !== 'running') return;
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+      state.phase = 'paused';
+      render();
+    }
+
+    /* §H  resumeTimer() */
+    function resumeTimer() {
+      if (state.phase !== 'paused') return;
+      // Recalculate startTime so wall-clock drift still works correctly
+      state.startTime = Date.now() - (state.totalSeconds - state.remainingSeconds) * 1000;
+      state.phase     = 'running';
+      state.intervalId = setInterval(tick, TICK_MS);
+      render();
+    }
+
+    /* §I  resetTimer() */
+    function resetTimer() {
+      clearInterval(state.intervalId);
+      state.intervalId     = null;
+      state.phase          = 'idle';
+      state.totalSeconds   = 0;
+      state.remainingSeconds = 0;
+      elError.textContent  = '';
+      document.documentElement.style.setProperty('--accent', '#7c3aed');
+      elProgress.style.stroke = '';
+
+      // Show last-used input values
+      const displaySecs = parseInt(inpSec.value, 10) || 10;
+      const displayMins = parseInt(inpMin.value, 10) || 0;
+      elTime.textContent = formatTime(displayMins * 60 + displaySecs);
+
+      render();
+    }
+
+    /* §J  beep() — Web Audio API, silent fallback */
+    function beep() {
+      try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      } catch (_) { /* silent fallback */ }
+    }
+
+    /* §K  Helpers */
+    function formatTime(totalSecs) {
+      const s = Math.max(0, Math.floor(totalSecs));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+    }
+
+    /* §L  Input clamping */
+    inpSec.addEventListener('input', () => {
+      let v = parseInt(inpSec.value, 10);
+      if (isNaN(v)) return;
+      if (v < 0)  inpSec.value = 0;
+      if (v > 59) inpSec.value = 59;
+      // Update ring display in idle
+      if (state.phase === 'idle') {
+        const m = parseInt(inpMin.value, 10) || 0;
+        elTime.textContent = formatTime(m * 60 + (parseInt(inpSec.value, 10) || 0));
+      }
+    });
+
+    inpMin.addEventListener('input', () => {
+      let v = parseInt(inpMin.value, 10);
+      if (isNaN(v)) return;
+      if (v < 0)  inpMin.value = 0;
+      if (v > 99) inpMin.value = 99;
+      if (state.phase === 'idle') {
+        const s = parseInt(inpSec.value, 10) || 0;
+        elTime.textContent = formatTime((parseInt(inpMin.value, 10) || 0) * 60 + s);
+      }
+    });
+
+    /* §M  Event listeners */
+    btnStart.addEventListener('click',  startTimer);
+    btnPause.addEventListener('click',  pauseTimer);
+    btnResume.addEventListener('click', resumeTimer);
+    btnReset.addEventListener('click',  resetTimer);
+
+    /* §N  Init — render initial idle state */
+    render();
+  </script>
+</body>
+</html>
